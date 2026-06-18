@@ -5,19 +5,31 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/login'
+      component: () => import('../components/Layout.vue'),
+      children: [
+        {
+          path: '',
+          name: 'Dashboard',
+          component: () => import('../views/Dashboard.vue'),
+        },
+        {
+          path: 'buildings',
+          name: 'Buildings',
+          component: () => import('../views/Buildings.vue'),
+        },
+        {
+          path: 'tenants',
+          name: 'Tenants',
+          component: () => import('../views/Tenants.vue'),
+        },
+        {
+          path: 'visitors',
+          name: 'Visitors',
+          component: () => import('../views/Visitors.vue'),
+        },
+      ],
     },
-    {
-      path: '/login',
-      name: 'Login',
-      component: () => import('../views/Login.vue')
-    },
-    {
-      path: '/leave-approval',
-      name: 'LeaveApproval',
-      component: () => import('../views/LeaveApproval.vue')
-    }
-  ]
+  ],
 })
 
 export default router

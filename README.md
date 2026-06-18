@@ -1,5 +1,90 @@
-# Vue 3 + TypeScript + Vite
+# 园区物业运营工作台
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+基于 Vue 3 + TypeScript + Vite + Element Plus 构建的园区物业运营管理工作台前端演示项目。
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## 功能模块
+
+### 1. 工作台首页
+- 数据概览卡片：总房源、出租率、在租企业、待审核访客
+- 待办事项列表：租约到期、访客审核、房间状态等
+- 楼宇占用概览：各楼宇出租率进度条
+- 今日访客动态
+- 租约到期提醒
+
+### 2. 楼宇房源管理
+- 楼宇列表：新增、编辑楼宇信息
+- 房源列表：按楼宇查看房源详情
+- 房源状态管理：空闲、已租、装修中
+- 占用率统计
+
+### 3. 企业租户管理
+- 租户列表：新增、编辑租户信息
+- 企业搜索：按名称搜索
+- 租期管理：租约起止日期、状态管理
+- 行业分布统计
+
+### 4. 访客预约管理
+- 预约列表：新增访客预约
+- 状态流转：待审核 → 已通过 / 已拒绝 → 已完成
+- 状态筛选
+- 预约统计：近7日趋势、来访目的分布
+
+## 技术栈
+
+- Vue 3 (Composition API + `<script setup>`)
+- TypeScript
+- Vite
+- Element Plus
+- Vue Router
+
+## 启动方式
+
+### 环境要求
+- Node.js >= 18
+
+### 安装依赖
+
+```bash
+npm install
+```
+
+### 启动开发服务器
+
+```bash
+npm run dev
+```
+
+启动后访问控制台输出的本地地址（默认 http://localhost:5173）。
+
+### 构建生产版本
+
+```bash
+npm run build
+```
+
+### 预览生产构建
+
+```bash
+npm run preview
+```
+
+### 运行测试
+
+```bash
+npm run test
+```
+
+## 数据说明
+
+本项目使用前端模拟数据，所有数据存储在内存中，刷新页面会重置为初始数据。
+
+模拟数据文件：`src/mock/data.ts`
+
+包含数据实体：
+- 楼宇 (Building)
+- 房源 (Room)
+- 租户 (Tenant)
+- 访客预约 (VisitorAppointment)
+- 待办事项 (TodoItem)
+
+所有模块的新增、编辑、删除、统计均基于同一份模拟数据，操作后会实时联动更新。
