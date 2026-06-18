@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
 
 export interface Building {
   id: string
@@ -125,13 +125,61 @@ function genId(prefix: string) {
   return `${prefix}${String(nextId).padStart(3, '0')}`
 }
 
+const STORAGE_KEY = 'property-admin-data-v1'
+
+function saveToStorage() {
+  try {
+    const data = {
+      buildings: store.buildings,
+      rooms: store.rooms,
+      tenants: store.tenants,
+      visitors: store.visitors,
+      todos: store.todos,
+      nextId,
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  } catch (e) {
+    console.warn('保存数据失败', e)
+  }
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch (e) {
+    console.warn('加载数据失败', e)
+    return null
+  }
+}
+
+function refreshAllTenantStatuses() {
+  store.tenants.forEach(tenant => {
+    if (tenant.status === '已退租') return
+    tenant.status = computeTenantStatus(tenant.leaseEnd)
+  })
+}
+
+const saved = loadFromStorage()
+
 export const store = reactive({
-  buildings: initialBuildings as Building[],
-  rooms: initialRooms as Room[],
-  tenants: initialTenants as Tenant[],
-  visitors: initialVisitors as VisitorAppointment[],
-  todos: initialTodos as TodoItem[],
+  buildings: (saved?.buildings ?? initialBuildings) as Building[],
+  rooms: (saved?.rooms ?? initialRooms) as Room[],
+  tenants: (saved?.tenants ?? initialTenants) as Tenant[],
+  visitors: (saved?.visitors ?? initialVisitors) as VisitorAppointment[],
+  todos: (saved?.todos ?? initialTodos) as TodoItem[],
 })
+
+if (saved?.nextId) nextId = saved.nextId
+
+refreshAllTenantStatuses()
+
+watch(
+  () => [store.buildings, store.rooms, store.tenants, store.visitors, store.todos],
+  () => saveToStorage(),
+  { deep: true }
+)
 
 export function addBuilding(data: Omit<Building, 'id'>) {
   const item: Building = { ...data, id: genId('B') }
@@ -168,6 +216,30 @@ export function addTenant(data: Omit<Tenant, 'id'>) {
     }
   }
   return item
+}
+
+export function computeTenantStatus(leaseEnd: string): '在租' | '即将到期' {
+  const end = new Date(leaseEnd)
+  const now = new Date()
+  const diff = (end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+  return diff <= 90 ? '即将到期' : '在租'
+}
+
+export function renewTenant(id: string, newLeaseEnd: string) {
+  const tenant = store.tenants.find(t => t.id === id)
+  if (!tenant) return
+  if (tenant.status !== '在租' && tenant.status !== '即将到期') return
+  if (new Date(newLeaseEnd) <= new Date(tenant.leaseEnd)) return
+
+  tenant.leaseEnd = newLeaseEnd
+  const newStatus = computeTenantStatus(newLeaseEnd)
+  const wasExpiring = tenant.status === '即将到期'
+  tenant.status = newStatus
+
+  if (wasExpiring && newStatus === '在租') {
+    const todo = store.todos.find(t => t.relatedId === id && t.type === 'lease' && !t.handled)
+    if (todo) todo.handled = true
+  }
 }
 
 export function updateTenant(id: string, data: Partial<Tenant>) {

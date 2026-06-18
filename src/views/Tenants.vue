@@ -52,9 +52,10 @@
             <el-tag :type="tenantStatusType(row.status)" size="small">{{ row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" align="center">
+        <el-table-column label="操作" width="160" align="center">
           <template #default="{ row }">
             <el-button type="primary" text size="small" @click="openDialog(row)">编辑</el-button>
+            <el-button v-if="row.status === '在租' || row.status === '即将到期'" type="warning" text size="small" @click="openRenewDialog(row)">续租</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -116,17 +117,42 @@
         <el-button type="primary" @click="saveTenant">确认</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="renewDialogVisible" title="续租" width="440" destroy-on-close>
+      <div style="margin-bottom: 16px; font-size: 14px; color: #1e293b">
+        <strong>{{ renewTarget?.name }}</strong> 当前租期至 <strong>{{ renewTarget?.leaseEnd }}</strong>
+      </div>
+      <el-form label-width="90px" label-position="left">
+        <el-form-item label="新租约结束日">
+          <el-date-picker
+            v-model="renewDate"
+            type="date"
+            value-format="YYYY-MM-DD"
+            placeholder="选择新的租约结束日期"
+            style="width: 100%"
+            :disabled-date="(d: Date) => d <= new Date(renewTarget!.leaseEnd)"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="renewDialogVisible = false">取消</el-button>
+        <el-button type="primary" :disabled="!renewDate" @click="saveRenew">确认续租</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
-import { store, addTenant, updateTenant, getRoomById, getBuildingById } from '../mock/data'
+import { store, addTenant, updateTenant, renewTenant, getRoomById, getBuildingById } from '../mock/data'
 import type { Tenant } from '../mock/data'
 
 const searchKey = ref('')
 const dialogVisible = ref(false)
 const editingTenant = ref<Tenant | null>(null)
+const renewDialogVisible = ref(false)
+const renewTarget = ref<Tenant | null>(null)
+const renewDate = ref('')
 
 const industries = ['软件开发', '大数据', '人工智能', '光电技术', '环保科技', '在线教育', '半导体', '机器人', '生物科技', '数字传媒', '其他']
 
@@ -198,6 +224,18 @@ function saveTenant() {
     addTenant({ ...form })
   }
   dialogVisible.value = false
+}
+
+function openRenewDialog(tenant: Tenant) {
+  renewTarget.value = tenant
+  renewDate.value = ''
+  renewDialogVisible.value = true
+}
+
+function saveRenew() {
+  if (!renewTarget.value || !renewDate.value) return
+  renewTenant(renewTarget.value.id, renewDate.value)
+  renewDialogVisible.value = false
 }
 </script>
 
