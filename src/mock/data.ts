@@ -154,7 +154,7 @@ function loadFromStorage() {
   }
 }
 
-function refreshAllTenantStatuses() {
+export function refreshAllTenantStatuses() {
   store.tenants.forEach(tenant => {
     if (tenant.status === '已退租') return
     tenant.status = computeTenantStatus(tenant.leaseEnd)
