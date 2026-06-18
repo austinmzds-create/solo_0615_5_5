@@ -4,15 +4,14 @@ import {
   renewTenant,
   computeTenantStatus,
   refreshAllTenantStatuses,
+  initialBuildings,
   type Tenant,
 } from './data'
+import { clearStore, resetStore, freshBuildings, freshRooms, freshTenants, freshVisitors, freshTodos } from './testFixture'
 
 describe('企业租户续租回归测试', () => {
   beforeEach(() => {
-    store.tenants = []
-    store.todos = []
-    store.rooms = []
-    store.buildings = []
+    clearStore()
   })
 
   function createExpiringTenant(daysUntilExpiry: number): Tenant {
@@ -188,5 +187,72 @@ describe('企业租户续租回归测试', () => {
     
     const pastDate = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000)
     expect(computeTenantStatus(pastDate.toISOString().slice(0, 10))).toBe('即将到期')
+  })
+})
+
+describe('测试数据装载工具 - 隔离验证', () => {
+  it('clearStore 应清空所有数组', () => {
+    resetStore()
+    expect(store.buildings.length).toBeGreaterThan(0)
+    expect(store.rooms.length).toBeGreaterThan(0)
+    expect(store.tenants.length).toBeGreaterThan(0)
+    expect(store.visitors.length).toBeGreaterThan(0)
+    expect(store.todos.length).toBeGreaterThan(0)
+
+    clearStore()
+    expect(store.buildings).toHaveLength(0)
+    expect(store.rooms).toHaveLength(0)
+    expect(store.tenants).toHaveLength(0)
+    expect(store.visitors).toHaveLength(0)
+    expect(store.todos).toHaveLength(0)
+  })
+
+  it('resetStore 应恢复初始数据', () => {
+    clearStore()
+    expect(store.buildings).toHaveLength(0)
+
+    resetStore()
+    expect(store.buildings).toEqual(freshBuildings())
+    expect(store.rooms).toEqual(freshRooms())
+    expect(store.tenants).toEqual(freshTenants())
+    expect(store.visitors).toEqual(freshVisitors())
+    expect(store.todos).toEqual(freshTodos())
+  })
+
+  it('fresh* 返回的深拷贝互不影响', () => {
+    const a = freshBuildings()
+    const b = freshBuildings()
+    a[0].name = '被污染的名字'
+    expect(b[0].name).not.toBe('被污染的名字')
+    expect(initialBuildings[0].name).not.toBe('被污染的名字')
+  })
+
+  it('连续 resetStore 不会累积数据', () => {
+    resetStore()
+    const len1 = store.buildings.length
+    resetStore()
+    const len2 = store.buildings.length
+    resetStore()
+    const len3 = store.buildings.length
+    expect(len1).toBe(len2)
+    expect(len2).toBe(len3)
+  })
+
+  it('多用例顺序执行不互相污染', () => {
+    resetStore()
+    store.buildings[0].name = '测试污染A'
+    expect(store.buildings[0].name).toBe('测试污染A')
+
+    resetStore()
+    expect(store.buildings[0].name).toBe('A栋·创新中心')
+
+    store.tenants.push({ id: 'T999', name: '脏数据', contactPerson: 'x', contactPhone: 'x', industry: 'x', leaseStart: '2024-01-01', leaseEnd: '2025-01-01', roomId: 'R999', status: '在租' })
+    expect(store.tenants.length).toBe(freshTenants().length + 1)
+
+    clearStore()
+    expect(store.tenants).toHaveLength(0)
+
+    resetStore()
+    expect(store.tenants.length).toBe(freshTenants().length)
   })
 })

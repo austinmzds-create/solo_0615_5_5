@@ -54,7 +54,7 @@ export interface TodoItem {
   handled: boolean
 }
 
-const initialBuildings: Building[] = [
+export const initialBuildings: Building[] = [
   { id: 'B001', name: 'A栋·创新中心', floors: 12, totalRooms: 48, address: '园区路1号', status: '正常' },
   { id: 'B002', name: 'B栋·智造工坊', floors: 8, totalRooms: 32, address: '园区路2号', status: '正常' },
   { id: 'B003', name: 'C栋·科创大厦', floors: 15, totalRooms: 60, address: '园区路3号', status: '正常' },
@@ -62,7 +62,7 @@ const initialBuildings: Building[] = [
   { id: 'B005', name: 'E栋·人才公寓', floors: 10, totalRooms: 40, address: '园区路5号', status: '正常' },
 ]
 
-const initialRooms: Room[] = [
+export const initialRooms: Room[] = [
   { id: 'R001', buildingId: 'B001', floor: 1, roomNumber: 'A-101', area: 120, status: '已租', tenantId: 'T001' },
   { id: 'R002', buildingId: 'B001', floor: 1, roomNumber: 'A-102', area: 85, status: '已租', tenantId: 'T002' },
   { id: 'R003', buildingId: 'B001', floor: 2, roomNumber: 'A-201', area: 150, status: '已租', tenantId: 'T003' },
@@ -83,7 +83,7 @@ const initialRooms: Room[] = [
   { id: 'R018', buildingId: 'B005', floor: 3, roomNumber: 'E-301', area: 78, status: '空闲', tenantId: null },
 ]
 
-const initialTenants: Tenant[] = [
+export const initialTenants: Tenant[] = [
   { id: 'T001', name: '星辰科技有限公司', contactPerson: '张明', contactPhone: '13800001001', industry: '软件开发', leaseStart: '2024-01-15', leaseEnd: '2026-01-14', roomId: 'R001', status: '在租' },
   { id: 'T002', name: '碧海数据科技', contactPerson: '李芳', contactPhone: '13800001002', industry: '大数据', leaseStart: '2024-03-01', leaseEnd: '2025-06-30', roomId: 'R002', status: '即将到期' },
   { id: 'T003', name: '云帆智能科技', contactPerson: '王磊', contactPhone: '13800001003', industry: '人工智能', leaseStart: '2024-06-01', leaseEnd: '2027-05-31', roomId: 'R003', status: '在租' },
@@ -96,7 +96,7 @@ const initialTenants: Tenant[] = [
   { id: 'T010', name: '晨曦传媒', contactPerson: '郑伟', contactPhone: '13800001010', industry: '数字传媒', leaseStart: '2025-01-01', leaseEnd: '2025-12-31', roomId: 'R017', status: '在租' },
 ]
 
-const initialVisitors: VisitorAppointment[] = [
+export const initialVisitors: VisitorAppointment[] = [
   { id: 'V001', visitorName: '钱学', visitorPhone: '13900001001', visitorCompany: '远景投资', targetTenantId: 'T001', purpose: '商务洽谈', appointmentDate: '2026-06-18', appointmentTime: '09:00', status: '待审核', createdAt: '2026-06-17 14:30' },
   { id: 'V002', visitorName: '冯杰', visitorPhone: '13900001002', visitorCompany: '华信咨询', targetTenantId: 'T003', purpose: '项目验收', appointmentDate: '2026-06-18', appointmentTime: '10:30', status: '已通过', createdAt: '2026-06-16 09:15' },
   { id: 'V003', visitorName: '杨柳', visitorPhone: '13900001003', visitorCompany: '鼎盛建设', targetTenantId: 'T005', purpose: '设备维修', appointmentDate: '2026-06-18', appointmentTime: '14:00', status: '待审核', createdAt: '2026-06-17 16:45' },
@@ -107,7 +107,7 @@ const initialVisitors: VisitorAppointment[] = [
   { id: 'V008', visitorName: '曹雪', visitorPhone: '13900001008', visitorCompany: '国检认证', targetTenantId: 'T009', purpose: '年检审核', appointmentDate: '2026-06-16', appointmentTime: '10:00', status: '已拒绝', createdAt: '2026-06-15 13:00' },
 ]
 
-const initialTodos: TodoItem[] = [
+export const initialTodos: TodoItem[] = [
   { id: 'TD001', type: 'lease', title: '碧海数据科技租约即将到期', description: '租约将于2025-06-30到期，需跟进续签', time: '2026-06-18', relatedId: 'T002', handled: false },
   { id: 'TD002', type: 'lease', title: '青山环保科技租约即将到期', description: '租约将于2025-07-31到期，需跟进续签', time: '2026-06-18', relatedId: 'T005', handled: false },
   { id: 'TD003', type: 'visitor', title: '钱学访客预约待审核', description: '远景投资-商务洽谈，今日09:00', time: '2026-06-18', relatedId: 'V001', handled: false },
@@ -119,6 +119,10 @@ const initialTodos: TodoItem[] = [
 ]
 
 let nextId = 100
+
+export function _resetNextId(val = 100) {
+  nextId = val
+}
 
 function genId(prefix: string) {
   nextId += 1
@@ -154,6 +158,10 @@ function loadFromStorage() {
   }
 }
 
+function deepCopy<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data))
+}
+
 export function refreshAllTenantStatuses() {
   store.tenants.forEach(tenant => {
     if (tenant.status === '已退租') return
@@ -164,11 +172,11 @@ export function refreshAllTenantStatuses() {
 const saved = loadFromStorage()
 
 export const store = reactive({
-  buildings: (saved?.buildings ?? initialBuildings) as Building[],
-  rooms: (saved?.rooms ?? initialRooms) as Room[],
-  tenants: (saved?.tenants ?? initialTenants) as Tenant[],
-  visitors: (saved?.visitors ?? initialVisitors) as VisitorAppointment[],
-  todos: (saved?.todos ?? initialTodos) as TodoItem[],
+  buildings: (saved?.buildings ?? deepCopy(initialBuildings)) as Building[],
+  rooms: (saved?.rooms ?? deepCopy(initialRooms)) as Room[],
+  tenants: (saved?.tenants ?? deepCopy(initialTenants)) as Tenant[],
+  visitors: (saved?.visitors ?? deepCopy(initialVisitors)) as VisitorAppointment[],
+  todos: (saved?.todos ?? deepCopy(initialTodos)) as TodoItem[],
 })
 
 if (saved?.nextId) nextId = saved.nextId
