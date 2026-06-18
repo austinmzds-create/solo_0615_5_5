@@ -6,19 +6,19 @@
         <div class="mini-stat-label">预约总数</div>
       </div>
       <div class="mini-stat">
-        <div class="mini-stat-val">{{ store.visitors.filter(v => v.status === '待审核').length }}</div>
+        <div class="mini-stat-val">{{ countByStatus(store.visitors, '待审核') }}</div>
         <div class="mini-stat-label">待审核</div>
       </div>
       <div class="mini-stat">
-        <div class="mini-stat-val">{{ store.visitors.filter(v => v.status === '已通过').length }}</div>
+        <div class="mini-stat-val">{{ countByStatus(store.visitors, '已通过') }}</div>
         <div class="mini-stat-label">已通过</div>
       </div>
       <div class="mini-stat">
-        <div class="mini-stat-val">{{ store.visitors.filter(v => v.status === '已完成').length }}</div>
+        <div class="mini-stat-val">{{ countByStatus(store.visitors, '已完成') }}</div>
         <div class="mini-stat-label">已完成</div>
       </div>
       <div class="mini-stat">
-        <div class="mini-stat-val">{{ store.visitors.filter(v => v.status === '已拒绝').length }}</div>
+        <div class="mini-stat-val">{{ countByStatus(store.visitors, '已拒绝') }}</div>
         <div class="mini-stat-label">已拒绝</div>
       </div>
     </div>
@@ -28,10 +28,7 @@
         <h3 class="section-title">访客预约列表</h3>
         <div class="header-actions">
           <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 120px; margin-right: 12px">
-            <el-option label="待审核" value="待审核" />
-            <el-option label="已通过" value="已通过" />
-            <el-option label="已拒绝" value="已拒绝" />
-            <el-option label="已完成" value="已完成" />
+            <el-option v-for="s in VISITOR_STATUS_LIST" :key="s" :label="s" :value="s" />
           </el-select>
           <el-button type="primary" @click="openDialog()">新增预约</el-button>
         </div>
@@ -54,16 +51,16 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="visitorStatusType(row.status)" size="small">{{ row.status }}</el-tag>
+            <el-tag :type="getVisitorStatusTag(row.status)" size="small">{{ row.status }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="180" align="center">
           <template #default="{ row }">
-            <template v-if="row.status === '待审核'">
+            <template v-if="canApprove(row.status)">
               <el-button type="success" text size="small" @click="approveVisitor(row)">通过</el-button>
               <el-button type="danger" text size="small" @click="rejectVisitor(row)">拒绝</el-button>
             </template>
-            <template v-else-if="row.status === '已通过'">
+            <template v-else-if="canComplete(row.status)">
               <el-button type="primary" text size="small" @click="completeVisitor(row)">完成</el-button>
             </template>
             <template v-else>
@@ -146,6 +143,18 @@ import { ref, computed, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { store, addVisitor, updateVisitor, getTenantById } from '../mock/data'
 import type { VisitorAppointment } from '../mock/data'
+import {
+  VISITOR_STATUS_LIST,
+  getVisitorStatusTag,
+  canApprove,
+  canComplete,
+  getNextStatusForApprove,
+  getNextStatusForReject,
+  getNextStatusForComplete,
+  countByStatus,
+  filterByStatus,
+} from '../utils/visitor-status'
+import type { VisitorStatus } from '../utils/visitor-status'
 
 const statusFilter = ref('')
 const dialogVisible = ref(false)
@@ -163,8 +172,7 @@ const form = reactive({
 })
 
 const filteredVisitors = computed(() => {
-  if (!statusFilter.value) return store.visitors
-  return store.visitors.filter(v => v.status === statusFilter.value)
+  return filterByStatus(store.visitors, statusFilter.value as VisitorStatus | '')
 })
 
 const purposeColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316']
@@ -194,27 +202,22 @@ const weekTrend = computed(() => {
   return days
 })
 
-function visitorStatusType(status: string) {
-  const map: Record<string, string> = { '待审核': 'warning', '已通过': 'success', '已拒绝': 'danger', '已完成': 'info' }
-  return map[status] || 'info'
-}
-
 function getTenantName(tenantId: string) {
   return getTenantById(tenantId)?.name ?? '-'
 }
 
 function approveVisitor(row: VisitorAppointment) {
-  updateVisitor(row.id, { status: '已通过' })
+  updateVisitor(row.id, { status: getNextStatusForApprove() })
   ElMessage.success(`${row.visitorName}的预约已通过`)
 }
 
 function rejectVisitor(row: VisitorAppointment) {
-  updateVisitor(row.id, { status: '已拒绝' })
+  updateVisitor(row.id, { status: getNextStatusForReject() })
   ElMessage.warning(`${row.visitorName}的预约已拒绝`)
 }
 
 function completeVisitor(row: VisitorAppointment) {
-  updateVisitor(row.id, { status: '已完成' })
+  updateVisitor(row.id, { status: getNextStatusForComplete() })
   ElMessage.success(`${row.visitorName}的来访已完成`)
 }
 

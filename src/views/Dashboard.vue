@@ -109,7 +109,7 @@
             <div class="visitor-content">
               <div class="visitor-top">
                 <span class="visitor-name">{{ v.visitorName }}</span>
-                <el-tag :type="visitorStatusType(v.status)" size="small">{{ v.status }}</el-tag>
+                <el-tag :type="getVisitorStatusTag(v.status)" size="small">{{ v.status }}</el-tag>
               </div>
               <div class="visitor-detail">{{ v.visitorCompany }} · {{ v.purpose }} · {{ v.appointmentTime }}</div>
             </div>
@@ -144,6 +144,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { store, getOccupancyStats, getBuildingOccupancy, getRoomById, getBuildingById, handleTodo } from '../mock/data'
 import type { TodoItem } from '../mock/data'
+import { getVisitorStatusTag, countByStatus } from '../utils/visitor-status'
 
 const router = useRouter()
 
@@ -152,7 +153,7 @@ const stats = computed(() => getOccupancyStats())
 const tenantCount = computed(() => store.tenants.filter(t => t.status !== '已退租').length)
 const expiringCount = computed(() => store.tenants.filter(t => t.status === '即将到期').length)
 const expiringTenants = computed(() => store.tenants.filter(t => t.status === '即将到期'))
-const pendingVisitors = computed(() => store.visitors.filter(v => v.status === '待审核').length)
+const pendingVisitors = computed(() => countByStatus(store.visitors, '待审核'))
 
 const todayStr = new Date().toISOString().slice(0, 10)
 const todayVisitors = computed(() => store.visitors.filter(v => v.appointmentDate === todayStr).length)
@@ -172,11 +173,6 @@ function getRoomLabel(roomId: string) {
   if (!room) return ''
   const building = getBuildingById(room.buildingId)
   return `${building?.name ?? ''} ${room.roomNumber}`
-}
-
-function visitorStatusType(status: string) {
-  const map: Record<string, string> = { '待审核': 'warning', '已通过': 'success', '已拒绝': 'danger', '已完成': 'info' }
-  return map[status] || 'info'
 }
 
 function onHandleTodo(item: TodoItem) {
