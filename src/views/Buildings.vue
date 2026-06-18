@@ -212,7 +212,11 @@ function openRoomDialog(room?: Room) {
 
 function saveRoom() {
   if (editingRoom.value) {
-    updateRoom(editingRoom.value.id, { floor: roomForm.floor, roomNumber: roomForm.roomNumber, area: roomForm.area, status: roomForm.status })
+    const update: Partial<Room> = { floor: roomForm.floor, roomNumber: roomForm.roomNumber, area: roomForm.area, status: roomForm.status }
+    if (roomForm.status === '空闲') {
+      update.tenantId = null
+    }
+    updateRoom(editingRoom.value.id, update)
   } else {
     addRoom({ buildingId: roomForm.buildingId, floor: roomForm.floor, roomNumber: roomForm.roomNumber, area: roomForm.area, status: roomForm.status, tenantId: null })
   }
